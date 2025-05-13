@@ -1,28 +1,33 @@
-# Use official Python base image
+# Use the official Python base image
 FROM python:3.11-slim
 
-# Set environment vars
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Install OS dependencies
+# Set env for Chainlit to avoid permission error
+ENV CHAINLIT_FILES_DIR=.chainlit_files
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
-    curl \
+    tesseract-ocr \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
-COPY . /app/
+# Copy only requirement files first
+COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Expose default Chainlit port
+# Copy rest of the app code
+COPY . .
+
+# Create the writable folder for file uploads
+RUN mkdir -p .chainlit_files
+
+# Expose default port
 EXPOSE 7860
 
-# Run Chainlit
-CMD ["chainlit", "run", "main.py", "--host", "0.0.0.0", "--port", "7860"]
+# Run Chainlit app
+CMD ["chainlit", "run", "main.py", "-h", "0.0.0.0", "-p", "7860"]

@@ -15,6 +15,9 @@ from langchain.chains import RetrievalQA
 from qdrant_client import QdrantClient
 from langchain.prompts import PromptTemplate
 
+# Set a writable directory for Chainlit in Hugging Face Spaces
+os.environ["CHAINLIT_FILES_DIR"] = "/tmp/chainlit_files"
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,7 +44,7 @@ async def on_chat_start():
 
         file = files[0]
         file_name = file.name.lower()
-        temp_path = file.path  # use path from uploaded file
+        temp_path = file.path
 
         # Load document
         if file_name.endswith(".pdf"):
@@ -87,31 +90,30 @@ async def on_chat_start():
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
 
-        # Create the prompt template
         prompt_template = """You are a helpful legal document assistant. Answer questions about the provided legal document in a clear and concise manner. 
-        If the information is not in the document, simply say "I don't have enough information to answer that question."
-        If you're not sure about something, say so.
-        Keep your answers brief and to the point.
+If the information is not in the document, simply say "I don't have enough information to answer that question."
+If you're not sure about something, say so.
+Keep your answers brief and to the point.
 
-        Context: {context}
-        Question: {question}
-        Answer:"""
+Context: {context}
+Question: {question}
+Answer:"""
 
         PROMPT = PromptTemplate(
             template=prompt_template,
             input_variables=["context", "question"]
         )
 
-        # Configure QA chain with better prompt and retrieval
+        # Configure QA chain
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             retriever=vectorstore.as_retriever(
                 search_kwargs={
-                    "k": 6,  # Increased number of chunks for better context
-                    "score_threshold": 0.3  # Lower threshold to get more relevant chunks
+                    "k": 6,
+                    "score_threshold": 0.3
                 }
             ),
-            return_source_documents=False,  # Don't return sources
+            return_source_documents=False,
             chain_type="stuff",
             chain_type_kwargs={"prompt": PROMPT}
         )
