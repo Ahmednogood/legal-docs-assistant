@@ -3,6 +3,10 @@ import chainlit as cl
 from dotenv import load_dotenv
 import logging
 
+# Fix for Hugging Face permission error
+os.environ["CHAINLIT_FILES_DIR"] = "/tmp/chainlit_files"
+os.makedirs("/tmp/chainlit_files", exist_ok=True)
+
 from langchain_community.vectorstores import Qdrant
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -14,9 +18,6 @@ from langchain_community.document_loaders import (
 from langchain.chains import RetrievalQA
 from qdrant_client import QdrantClient
 from langchain.prompts import PromptTemplate
-
-# Set a writable directory for Chainlit in Hugging Face Spaces
-os.environ["CHAINLIT_FILES_DIR"] = "/tmp/chainlit_files"
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -90,6 +91,7 @@ async def on_chat_start():
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
 
+        # Prompt template
         prompt_template = """You are a helpful legal document assistant. Answer questions about the provided legal document in a clear and concise manner. 
 If the information is not in the document, simply say "I don't have enough information to answer that question."
 If you're not sure about something, say so.
